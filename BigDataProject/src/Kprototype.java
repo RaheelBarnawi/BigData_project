@@ -81,9 +81,11 @@ public class Kprototype {
             BufferedReader br = new BufferedReader(new FileReader(centroidsPath.getName().toString()));
             String centroid = null;
             int index=3;
+            int cluster_id=0; 
             ClusterSummuray object; 
             while ((centroid = br.readLine()) != null) 
             {
+            	cluster_id+=1; 
                 String[] splits = centroid.split("\t")[1].split(" ");
                 for(int i=0; i<3;  i++)
                 {
@@ -95,8 +97,13 @@ public class Kprototype {
                 	center_cate.add(j, splits[index]); 
                 	index+=1; 
                 }
-                
+                // set up  cluster representations 
                 object= new ClusterSummuray();
+                object.set_center_num(center_num);
+                object.set_center_cate(center_cate);
+                object.setCluster_id(cluster_id);
+                clusters.add(object);
+                
                 
             }
         }
