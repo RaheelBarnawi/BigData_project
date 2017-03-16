@@ -14,6 +14,9 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import javax.xml.bind.DatatypeConverter;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileSystem;
@@ -40,7 +43,7 @@ public class Kprototype {
      */
     public static class KmeansMapper extends Mapper<Object, Text, IntWritable, Text> {
 
-       
+    	public final Log logR = LogFactory.getLog(KmeansMapper.class);
         private ArrayList<Double> center_num= new ArrayList<Double>(); // a list for numeric features
         private ArrayList<String>center_cate= new ArrayList<String>();// a list for categorical features
         private ArrayList<ClusterSummuray> clusters= new ArrayList<ClusterSummuray>();  //  a list to hold the clusters'information 
@@ -80,6 +83,7 @@ public class Kprototype {
 
         @Override
         public void setup(Context context) throws IOException, InterruptedException {
+        	logR.info("setup method  " ); 
             // Read the file containing centroids
             URI centroidURI = Job.getInstance(context.getConfiguration()).getCacheFiles()[0];
             Path centroidsPath = new Path(centroidURI.getPath());
@@ -91,39 +95,47 @@ public class Kprototype {
             while ((centroid = br.readLine()) != null) 
             {
             	cluster_id+=1; 
-                String[] splits = centroid.split("\t")[1].split(" ");
-                for(int i=0; i<3;  i++)
+                String[] splits = centroid.split("\t");
+                int s_size= splits.length;
+                logR.info("string length  "+ s_size ); 
+                for (int k=1; k<splits.length; k++)
                 {
-                	// construct numeric center
-                	center_num.add(i,  Double.parseDouble(splits[i]));
-                }
-                for(int j=0; j<2; j++)
-                {
-                	center_cate.add(j, splits[index]); 
-                	index+=1; 
-                }
+                	logR.info("enter for  " ); 
+                	
+                	 if (k<=5)
+                	 {
+                		 //logR.info("k <3  " ); 
+                		 center_num.add(Double.parseDouble(splits[k])); 
+                	 }
+                	 else
+                	 {
+                		 //logR.info("k>3 " ); 
+                		 center_cate.add(splits[k]); 
+                	 }		 
+                }              
+                //logR.info("end for cat"); 
                 // set up  cluster representations 
                 object= new ClusterSummuray();
                 object.set_center_num(center_num);
                 object.set_center_cate(center_cate);
                 object.setCluster_id(cluster_id);
-                clusters.add(object);
-                
-                
+                clusters.add(object);      
             }
+           
         }
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-            // Emit (i,value) where i is the id of the closest centroid
-            String[] splits = value.toString().split(" ");
-            // split the datapoint into two parts, numeric and categoriacl 
+            // Emit (i,value) where i is the id of the closest centroidlogR.info("setup " ); 
+        	logR.info("map method " ); 
+            String[] splits = value.toString().split("\t");
+            // split the data point into two parts, numeric and categorical 
             ArrayList<String> cate_values= new ArrayList<String>();
             ArrayList<Double> num_values= new ArrayList<Double>(); 
             ClusterSummuray object; 
             for(int i=0; i<splits.length; i++)
             {
-            	if (i<3) // numeric values
+            	if (i<5) // numeric values
             	{
             		num_values.add(Double.parseDouble(splits[i]) );
             	}
@@ -148,7 +160,7 @@ public class Kprototype {
                 }
             }
             context.write(new IntWritable(closestCentroid),value);
-                          
+            logR.info(" finish map method " );                 
         }
     }
 
@@ -165,15 +177,7 @@ public class Kprototype {
 
         public void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             Point2D.Double point = new Point2D.Double(0, 0);
-            int nPoints = 0;
-            while (values.iterator().hasNext()) {
-                nPoints++;
-                String[] pointString = values.iterator().next().toString().split(" ");
-                point.setLocation(point.getX() + Double.parseDouble(pointString[0]),
-                                  point.getY() + Double.parseDouble(pointString[1]));
-            }
-            point.setLocation(point.getX() / nPoints,
-                              point.getY() / nPoints);
+            String s="test"; 
             context.write(key, new Text(point.getX() + " " + point.getY()));
         }
     }
@@ -227,6 +231,7 @@ public class Kprototype {
             int i = 0;
             for (String s : centroids) {
                 out.write((i++ + "\t" + s + "\n").getBytes());
+                System.out.println("line"+ s);
             }
         } finally {
             out.close();
