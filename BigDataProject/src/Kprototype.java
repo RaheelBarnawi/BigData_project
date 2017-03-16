@@ -100,20 +100,16 @@ public class Kprototype {
                 logR.info("string length  "+ s_size ); 
                 for (int k=1; k<splits.length; k++)
                 {
-                	logR.info("enter for  " ); 
-                	
                 	 if (k<=5)
                 	 {
-                		 //logR.info("k <3  " ); 
                 		 center_num.add(Double.parseDouble(splits[k])); 
                 	 }
                 	 else
                 	 {
-                		 //logR.info("k>3 " ); 
                 		 center_cate.add(splits[k]); 
                 	 }		 
                 }              
-                //logR.info("end for cat"); 
+             
                 // set up  cluster representations 
                 object= new ClusterSummuray();
                 object.set_center_num(center_num);
@@ -127,12 +123,18 @@ public class Kprototype {
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             // Emit (i,value) where i is the id of the closest centroidlogR.info("setup " ); 
-        	logR.info("map method " ); 
+        //	logR.info("map method " ); 
             String[] splits = value.toString().split("\t");
             // split the data point into two parts, numeric and categorical 
             ArrayList<String> cate_values= new ArrayList<String>();
             ArrayList<Double> num_values= new ArrayList<Double>(); 
             ClusterSummuray object; 
+            double mixed_diatance= 0.0; 
+            double minDistance = 1000000000; 
+            double num_distance= 0.0;
+            int closestCentroid=0;
+            double cate_distance=0.0; 
+            
             for(int i=0; i<splits.length; i++)
             {
             	if (i<5) // numeric values
@@ -144,21 +146,21 @@ public class Kprototype {
             		cate_values.add(splits[i]);
             	}
             }
-            // once the 
-            double minDistance = 1000000000; 
-            double distance= 0.0;
-            int closestCentroid=0;
+                    
             for (int j=0; j< clusters.size(); j++) 
             { 
             	object= new ClusterSummuray (); 
             	object= clusters.get(j);
-            	distance= compute_EculdeanDistance(object.get_num_center(), num_values);
+            	num_distance= compute_EculdeanDistance(object.get_num_center(), num_values);
+            	cate_distance= compute_MisMatch_distance( object.get_cate_center(),cate_values );
+            	mixed_diatance= num_distance + Math.abs((1- cate_distance));
              
-                if (distance < minDistance) {
-                    minDistance = distance;
+                if (mixed_diatance < minDistance) {
+                    minDistance = mixed_diatance;
                     closestCentroid = object.getCluster_id();
                 }
             }
+            
             context.write(new IntWritable(closestCentroid),value);
             logR.info(" finish map method " );                 
         }
@@ -176,9 +178,24 @@ public class Kprototype {
     public static class KmeansReducer extends Reducer<IntWritable, Text, IntWritable, Text> {
 
         public void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            Point2D.Double point = new Point2D.Double(0, 0);
-            String s="test"; 
-            context.write(key, new Text(point.getX() + " " + point.getY()));
+        	int nPoints=0; 
+        	ArrayList<String> cate_values= new ArrayList<String>();
+            ArrayList<Double> num_values= new ArrayList<Double>(); 
+            ArrayList<Double> center= new ArrayList<Double>();
+            ArrayList<String> center_cate= new ArrayList<String>();
+            for (int i=0; i<5; i++)
+            	num_values.add(i, 0.0);
+            
+        	while (values.iterator().hasNext()) 
+        	{
+                nPoints++;
+                String[] pointString = values.iterator().next().toString().split("\t");
+                for(int i=0; i<pointString.length; i++)
+                {
+                	if (i<5) // numeric values
+                		num_values.add(i, num_values.get(i)+ (Double.parseDouble(pointString[i])));
+                }
+        	}
         }
     }
 
