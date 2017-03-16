@@ -40,11 +40,12 @@ public class Kprototype {
      */
     public static class KmeansMapper extends Mapper<Object, Text, IntWritable, Text> {
 
-        private ArrayList<Point2D.Double> centroids = new ArrayList<>();
-        private ArrayList<Double> center_num= new ArrayList<Double>(); 
-        private ArrayList<String>center_cate= new ArrayList<String>();
-        private ArrayList<ClusterSummuray> clusters= new ArrayList<ClusterSummuray>(); 
+       
+        private ArrayList<Double> center_num= new ArrayList<Double>(); // a list for numeric features
+        private ArrayList<String>center_cate= new ArrayList<String>();// a list for categorical features
+        private ArrayList<ClusterSummuray> clusters= new ArrayList<ClusterSummuray>();  //  a list to hold the clusters'information 
         
+        // this method is used to compute the distance between numeric features and centriod
         public double compute_EculdeanDistance(ArrayList <Double> center, ArrayList<Double> datapoint)
         {
         	double differnece=0.0; 
@@ -60,7 +61,11 @@ public class Kprototype {
     		distance= Math.sqrt(square);
     		return distance; 
         }
-        // find the similarity between clusteriod and categorical values 
+        
+        /* find the similarity between clusteriod and categorical values
+          two values x and y have similarity value equal to one if x=y otherwise it's zero
+          then distance= 1- similarity 
+        */
         public int  compute_MisMatch_distance(ArrayList<String> cateData, ArrayList<String> clusteroid )
     	{
     		int total_misMatch=0;
@@ -112,21 +117,38 @@ public class Kprototype {
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             // Emit (i,value) where i is the id of the closest centroid
             String[] splits = value.toString().split(" ");
-            Point2D.Double point = new Point2D.Double(
-                    Double.parseDouble(splits[0]),
-                    Double.parseDouble(splits[1])
-            );
+            // split the datapoint into two parts, numeric and categoriacl 
+            ArrayList<String> cate_values= new ArrayList<String>();
+            ArrayList<Double> num_values= new ArrayList<Double>(); 
+            ClusterSummuray object; 
+            for(int i=0; i<splits.length; i++)
+            {
+            	if (i<3) // numeric values
+            	{
+            		num_values.add(Double.parseDouble(splits[i]) );
+            	}
+            	else // categorical values
+            	{
+            		cate_values.add(splits[i]);
+            	}
+            }
+            // once the 
             double minDistance = 1000000000; 
-            Point2D.Double closestCentroid = centroids.get(0);
-            for (Point2D.Double centroid : centroids) {
-                double distance = centroid.distance(point);
+            double distance= 0.0;
+            int closestCentroid=0;
+            for (int j=0; j< clusters.size(); j++) 
+            { 
+            	object= new ClusterSummuray (); 
+            	object= clusters.get(j);
+            	distance= compute_EculdeanDistance(object.get_num_center(), num_values);
+             
                 if (distance < minDistance) {
                     minDistance = distance;
-                    closestCentroid = centroid;
+                    closestCentroid = object.getCluster_id();
                 }
             }
-            context.write(new IntWritable(centroids.indexOf(closestCentroid)),
-                          new Text(point.getX() + " " + point.getY()));
+            context.write(new IntWritable(closestCentroid),value);
+                          
         }
     }
 
