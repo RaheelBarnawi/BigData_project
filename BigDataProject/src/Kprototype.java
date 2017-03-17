@@ -274,13 +274,24 @@ public class Kprototype {
             clusteriod.add(i, mode_dim_i);
             
             }
-    		
+    		String cluster_representive="";
+            for(int i=0; i<centriod.size(); i++)
+            {
+            	cluster_representive+= centriod.get(i).toString();
+            	cluster_representive+=" ";	
+            }
+            for(int j=0; j<clusteriod.size();j++)
+            {
+            	cluster_representive+= clusteriod.get(j);
+            	cluster_representive+=" ";
+            }
+            	
+            	
             
         	
-           // context.write(key, new Text(point.getX() + " " + point.getY()));
+            context.write(key, new Text(cluster_representive));
         	
-        	String one="0.0";
-        	 context.write(key, new Text(one));
+        	
         }
     }
 
