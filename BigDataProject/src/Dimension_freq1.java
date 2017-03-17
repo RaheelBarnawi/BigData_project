@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 
-public class K_prototype {
+public class Dimension_freq1 {
 	
 	public double compute_EculdeanDistance(ArrayList<Double> intData, ArrayList<Double> centriod)
 	{
