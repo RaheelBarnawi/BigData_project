@@ -13,6 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.logging.Log;
@@ -44,8 +47,7 @@ public class Kprototype {
     public static class KmeansMapper extends Mapper<Object, Text, IntWritable, Text> {
 
     	public final Log logR = LogFactory.getLog(KmeansMapper.class);
-        private ArrayList<Double> center_num= new ArrayList<Double>(); // a list for numeric features
-        private ArrayList<String>center_cate= new ArrayList<String>();// a list for categorical features
+        
         private ArrayList<ClusterSummuray> clusters= new ArrayList<ClusterSummuray>();  //  a list to hold the clusters'information 
         
         // this method is used to compute the distance between numeric features and centriod
@@ -54,7 +56,7 @@ public class Kprototype {
         	double differnece=0.0; 
     		double square=0.0; 
     		double distance=0.0; 
-    		
+    		logR.info("center size"+center.size()+ "   " + "data size"+ datapoint.size());
     		for (int i=0 ; i<datapoint.size();i++)
     		{
     			differnece= datapoint.get(i) - center.get(i);
@@ -88,6 +90,8 @@ public class Kprototype {
             URI centroidURI = Job.getInstance(context.getConfiguration()).getCacheFiles()[0];
             Path centroidsPath = new Path(centroidURI.getPath());
             BufferedReader br = new BufferedReader(new FileReader(centroidsPath.getName().toString()));
+            ArrayList<Double> center_num;// a list for numeric features
+            ArrayList<String>center_cate;// a list for categorical features
             String centroid = null;
             int index=3;
             int cluster_id=0; 
@@ -97,6 +101,9 @@ public class Kprototype {
             	cluster_id+=1; 
                 String[] splits = centroid.split("\t");
                 int s_size= splits.length;
+                center_num= new ArrayList<Double>(); 
+                center_cate= new ArrayList<String>();
+                
                 logR.info("string length  "+ s_size ); 
                 for (int k=1; k<splits.length; k++)
                 {
@@ -117,13 +124,13 @@ public class Kprototype {
                 object.setCluster_id(cluster_id);
                 clusters.add(object);      
             }
-           
+            logR.info(" finish setup method  " );  
         }
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             // Emit (i,value) where i is the id of the closest centroidlogR.info("setup " ); 
-        //	logR.info("map method " ); 
+        	logR.info("map method " ); 
             String[] splits = value.toString().split("\t");
             // split the data point into two parts, numeric and categorical 
             ArrayList<String> cate_values= new ArrayList<String>();
@@ -139,10 +146,13 @@ public class Kprototype {
             {
             	if (i<5) // numeric values
             	{
+                    logR.info(" i<5  " );  
+
             		num_values.add(Double.parseDouble(splits[i]) );
             	}
             	else // categorical values
             	{
+            		 logR.info(" i>5  " );  
             		cate_values.add(splits[i]);
             	}
             }
@@ -151,9 +161,10 @@ public class Kprototype {
             { 
             	object= new ClusterSummuray (); 
             	object= clusters.get(j);
+            	logR.info(" clusrer _id" +object.getCluster_id()); 
             	num_distance= compute_EculdeanDistance(object.get_num_center(), num_values);
             	cate_distance= compute_MisMatch_distance( object.get_cate_center(),cate_values );
-            	mixed_diatance= num_distance + Math.abs((1- cate_distance));
+            	mixed_diatance= num_distance + Math.abs((1- cate_distance));// 
              
                 if (mixed_diatance < minDistance) {
                     minDistance = mixed_diatance;
@@ -175,27 +186,101 @@ public class Kprototype {
     /**
      * ***********
      */
-    public static class KmeansReducer extends Reducer<IntWritable, Text, IntWritable, Text> {
-
+    public static class KmeansReducer extends Reducer<IntWritable, Text, IntWritable, Text> 
+    {
+    	public static String find_most_frequent(Map<String, Integer> dim)
+    	{
+    	int freq=0; 
+    	int max_freq=-1; 
+    	String mode= null; 
+    		for (String key : dim.keySet()) 
+    		{
+    			freq= dim.get(key);
+    			if (freq> max_freq)
+    			{
+    				max_freq= freq; 
+    				mode=key; 	
+    			}    
+            }
+    		
+    		return mode; 
+    		
+    	}
         public void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-        	int nPoints=0; 
+           
+        	
+        	Map<Integer, Dimension_freq > dim_info= new HashMap<Integer, Dimension_freq >(); 
         	ArrayList<String> cate_values= new ArrayList<String>();
-            ArrayList<Double> num_values= new ArrayList<Double>(); 
-            ArrayList<Double> center= new ArrayList<Double>();
-            ArrayList<String> center_cate= new ArrayList<String>();
-            for (int i=0; i<5; i++)
-            	num_values.add(i, 0.0);
-            
+            ArrayList<Double> sum_num_values= new ArrayList<Double>(); 
+            ArrayList<Double> centriod= new ArrayList<Double>(); 
+        	int dim_cate=6; // categorical dimension
+        	int dim_num=5; 
+        	Dimension_freq  object; 
+        	Dimension_freq  temp_object; 
+        	int temp_index=0; 
+        	int nPoints = 0;
+        //	int temp_value=0; 
+        	// 1- handling numerical part
+        	// compute the mean of the values
+        	// Initialize  sum_num_values 
+        	for(int initi=0;initi<dim_num; initi++ )
+        		sum_num_values.add(initi, 0.0);
+        	// prepare categorical dimensions
+        	//for each dimension create an object to hold the frequency
+        	//of values in that dimension 
+        	for (int i=0; i<dim_cate; i++)
+    		{
+    			object= new Dimension_freq (i);
+    			dim_info.put(i, object);
+    		}
         	while (values.iterator().hasNext()) 
         	{
                 nPoints++;
-                String[] pointString = values.iterator().next().toString().split("\t");
-                for(int i=0; i<pointString.length; i++)
+                String[] mixed_values = values.iterator().next().toString().split(" ");
+                // sum numeric values in dimension i 
+                for(int i=0; i<dim_num; i++)
                 {
-                	if (i<5) // numeric values
-                		num_values.add(i, num_values.get(i)+ (Double.parseDouble(pointString[i])));
+                		double temp_value=0;
+                		double current_value= Double.parseDouble(mixed_values[i]);
+                		temp_value= sum_num_values.get(i) + current_value;
+                		sum_num_values.add(i, temp_value);            		
                 }
+                for(int j=0; j<dim_cate; j++)
+                {
+                	temp_index=dim_num+j; 
+                	temp_object= dim_info.get(j);
+                	temp_object.put(mixed_values[temp_index],1);
+                	dim_info.put(j, temp_object);
+                }
+                    
+            }// end reading list of values 
+        	
+        	// compute the mean for each i_num dimension 
+        	double avg=0.0; 
+        	for(int i=0; i<sum_num_values.size(); i++)
+        	{
+        		avg=sum_num_values.get(i) / nPoints; 
+        		centriod.add(i, avg);	
         	}
+        	
+        	// compute the mode for each i_cate dimension	
+        	ArrayList<String> clusteriod =new ArrayList<String>(); 
+            String mode_dim_i= null; 
+            for(int i=0; i<dim_info.size();i++)
+            {
+            temp_object=  dim_info.get(i) ; 
+            Map<String ,Integer > temp= temp_object.getDim_values_freq();
+            mode_dim_i= find_most_frequent(temp);
+            clusteriod.add(i, mode_dim_i);
+            
+            }
+    		
+            
+        	
+           // context.write(key, new Text(point.getX() + " " + point.getY()));
+        	
+        	String one="0.0";
+        	 context.write(key, new Text(one));
         }
     }
 
