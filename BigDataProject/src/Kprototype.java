@@ -56,7 +56,7 @@ public class Kprototype {
         	double differnece=0.0; 
     		double square=0.0; 
     		double distance=0.0; 
-    		logR.info("center size"+center.size()+ "   " + "data size"+ datapoint.size());
+    		//logR.info("center size"+center.size()+ "   " + "data size"+ datapoint.size());
     		for (int i=0 ; i<datapoint.size();i++)
     		{
     			differnece= datapoint.get(i) - center.get(i);
@@ -85,7 +85,7 @@ public class Kprototype {
 
         @Override
         public void setup(Context context) throws IOException, InterruptedException {
-        	logR.info("setup method  " ); 
+        	//logR.info("setup method  " ); 
             // Read the file containing centroids
             URI centroidURI = Job.getInstance(context.getConfiguration()).getCacheFiles()[0];
             Path centroidsPath = new Path(centroidURI.getPath());
@@ -104,7 +104,7 @@ public class Kprototype {
                 center_num= new ArrayList<Double>(); 
                 center_cate= new ArrayList<String>();
                 
-                logR.info("string length  "+ s_size ); 
+              //  logR.info("string length  "+ s_size ); 
                 for (int k=1; k<splits.length; k++)
                 {
                 	 if (k<=5)
@@ -124,13 +124,13 @@ public class Kprototype {
                 object.setCluster_id(cluster_id);
                 clusters.add(object);      
             }
-            logR.info(" finish setup method  " );  
+           // logR.info(" finish setup method  " );  
         }
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             // Emit (i,value) where i is the id of the closest centroidlogR.info("setup " ); 
-        	logR.info("map method " ); 
+        //	logR.info("map method " ); 
             String[] splits = value.toString().split("\t");
             // split the data point into two parts, numeric and categorical 
             ArrayList<String> cate_values= new ArrayList<String>();
@@ -146,13 +146,13 @@ public class Kprototype {
             {
             	if (i<5) // numeric values
             	{
-                    logR.info(" i<5  " );  
+                  //  logR.info(" i<5  " );  
 
             		num_values.add(Double.parseDouble(splits[i]) );
             	}
             	else // categorical values
             	{
-            		 logR.info(" i>5  " );  
+            		// logR.info(" i>5  " );  
             		cate_values.add(splits[i]);
             	}
             }
@@ -161,7 +161,7 @@ public class Kprototype {
             { 
             	object= new ClusterSummuray (); 
             	object= clusters.get(j);
-            	logR.info(" clusrer _id" +object.getCluster_id()); 
+            //	logR.info(" clusrer _id" +object.getCluster_id()); 
             	num_distance= compute_EculdeanDistance(object.get_num_center(), num_values);
             	cate_distance= compute_MisMatch_distance( object.get_cate_center(),cate_values );
             	mixed_diatance= num_distance + Math.abs((1- cate_distance));// 
@@ -173,7 +173,7 @@ public class Kprototype {
             }
             
             context.write(new IntWritable(closestCentroid),value);
-            logR.info(" finish map method " );                 
+           // logR.info(" finish map method " );                 
         }
     }
 
@@ -188,8 +188,11 @@ public class Kprototype {
      */
     public static class KmeansReducer extends Reducer<IntWritable, Text, IntWritable, Text> 
     {
+    	public final static Log logR = LogFactory.getLog(KmeansMapper.class);
+
     	public static String find_most_frequent(Map<String, Integer> dim)
     	{
+    		logR.info("find_most_frequen" );
     	int freq=0; 
     	int max_freq=-1; 
     	String mode= null; 
@@ -208,46 +211,56 @@ public class Kprototype {
     	}
         public void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
            
-        	
+        	logR.info("Reducer " );
         	Map<Integer, Dimension_freq > dim_info= new HashMap<Integer, Dimension_freq >(); 
         	ArrayList<String> cate_values= new ArrayList<String>();
             ArrayList<Double> sum_num_values= new ArrayList<Double>(); 
-            ArrayList<Double> centriod= new ArrayList<Double>(); 
+           ArrayList<Double> center= new ArrayList<Double>(); 
         	int dim_cate=6; // categorical dimension
         	int dim_num=5; 
         	Dimension_freq  object; 
         	Dimension_freq  temp_object; 
         	int temp_index=0; 
         	int nPoints = 0;
+        	double temp_value=0.0;
+        	double current_value=0.0;
         //	int temp_value=0; 
         	// 1- handling numerical part
         	// compute the mean of the values
         	// Initialize  sum_num_values 
         	for(int initi=0;initi<dim_num; initi++ )
         		sum_num_values.add(initi, 0.0);
+        	logR.info("sum_num_values" +sum_num_values);
         	// prepare categorical dimensions
         	//for each dimension create an object to hold the frequency
         	//of values in that dimension 
         	for (int i=0; i<dim_cate; i++)
     		{
+        		//logR.info("create dim_cate ");
     			object= new Dimension_freq (i);
     			dim_info.put(i, object);
     		}
         	while (values.iterator().hasNext()) 
         	{
                 nPoints++;
-                String[] mixed_values = values.iterator().next().toString().split(" ");
+                String[] mixed_values = values.iterator().next().toString().split("\t");
+               logR.info("mixed_values"+mixed_values.length );
                 // sum numeric values in dimension i 
                 for(int i=0; i<dim_num; i++)
                 {
-                		double temp_value=0;
-                		double current_value= Double.parseDouble(mixed_values[i]);
+            
+                	//logR.info("sum_num" );
+                		
+                	    current_value= Double.parseDouble(mixed_values[i]);
                 		temp_value= sum_num_values.get(i) + current_value;
-                		sum_num_values.add(i, temp_value);            		
+                		sum_num_values.add(i, temp_value);  
+                	
                 }
+              logR.info("sum_num"+ sum_num_values);
                 for(int j=0; j<dim_cate; j++)
                 {
                 	temp_index=dim_num+j; 
+                	//logR.info("temp_index " + temp_index);
                 	temp_object= dim_info.get(j);
                 	temp_object.put(mixed_values[temp_index],1);
                 	dim_info.put(j, temp_object);
@@ -260,7 +273,10 @@ public class Kprototype {
         	for(int i=0; i<sum_num_values.size(); i++)
         	{
         		avg=sum_num_values.get(i) / nPoints; 
-        		centriod.add(i, avg);	
+        		logR.info("avg " + avg);
+        		//centriod.add(i, avg);	
+        		center.add(i, avg);
+        		
         	}
         	
         	// compute the mode for each i_cate dimension	
@@ -274,10 +290,11 @@ public class Kprototype {
             clusteriod.add(i, mode_dim_i);
             
             }
+            logR.info("centroid_size " +center.size());
     		String cluster_representive="";
-            for(int i=0; i<centriod.size(); i++)
+            for(int i=0; i<center.size(); i++)
             {
-            	cluster_representive+= centriod.get(i).toString();
+            	cluster_representive+= center.get(i).toString();
             	cluster_representive+=" ";	
             }
             for(int j=0; j<clusteriod.size();j++)
@@ -285,10 +302,8 @@ public class Kprototype {
             	cluster_representive+= clusteriod.get(j);
             	cluster_representive+=" ";
             }
-            	
-            	
-            
-        	
+      	
+            logR.info("cluster_representive " + cluster_representive);
             context.write(key, new Text(cluster_representive));
         	
         	
