@@ -214,8 +214,9 @@ public class Kprototype {
         	logR.info("Reducer " );
         	Map<Integer, Dimension_freq > dim_info= new HashMap<Integer, Dimension_freq >(); 
         	ArrayList<String> cate_values= new ArrayList<String>();
-            ArrayList<Double> sum_num_values= new ArrayList<Double>(); 
+            ArrayList<Double> sum_num_values= new ArrayList<Double>(5); 
            ArrayList<Double> center= new ArrayList<Double>(); 
+           Object[] list = new Object[5];
         	int dim_cate=6; // categorical dimension
         	int dim_num=5; 
         	Dimension_freq  object; 
@@ -254,9 +255,12 @@ public class Kprototype {
                 	    current_value= Double.parseDouble(mixed_values[i]);
                 		temp_value= sum_num_values.get(i) + current_value;
                 		sum_num_values.add(i, temp_value);  
+                		list[i]= temp_value;
                 	
                 }
               logR.info("sum_num"+ sum_num_values);
+              logR.info("list sum"+ list);
+              
                 for(int j=0; j<dim_cate; j++)
                 {
                 	temp_index=dim_num+j; 
