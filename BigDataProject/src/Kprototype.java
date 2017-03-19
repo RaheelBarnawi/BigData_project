@@ -12,6 +12,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,10 +55,12 @@ public class Kprototype {
         // this method is used to compute the distance between numeric features and centriod
         public double compute_EculdeanDistance(ArrayList <Double> center, ArrayList<Double> datapoint)
         {
+        	logR.info("compute Eucledian ");
         	double differnece=0.0; 
     		double square=0.0; 
     		double distance=0.0; 
-    		//logR.info("center size"+center.size()+ "   " + "data size"+ datapoint.size());
+    		logR.info("center size"+center.size()+ "   " + "data size"+ datapoint.size());
+    		logR.info("center info"+center);
     		for (int i=0 ; i<datapoint.size();i++)
     		{
     			differnece= datapoint.get(i) - center.get(i);
@@ -64,8 +68,10 @@ public class Kprototype {
     			square += differnece *differnece;	
     		}
     		distance= Math.sqrt(square);
+    		logR.info(" finish compute Eucledian ");
     		return distance; 
         }
+        
         
         /* find the similarity between clusteriod and categorical values
           two values x and y have similarity value equal to one if x=y otherwise it's zero
@@ -73,6 +79,7 @@ public class Kprototype {
         */
         public int  compute_MisMatch_distance(ArrayList<String> cateData, ArrayList<String> clusteroid )
     	{
+        	logR.info("Mismatch ");
     		int total_misMatch=0;
     		for(int i=0; i< cateData.size();i++)
     		{
@@ -85,7 +92,7 @@ public class Kprototype {
 
         @Override
         public void setup(Context context) throws IOException, InterruptedException {
-        	//logR.info("setup method  " ); 
+        	logR.info("setup method  " ); 
             // Read the file containing centroids
             URI centroidURI = Job.getInstance(context.getConfiguration()).getCacheFiles()[0];
             Path centroidsPath = new Path(centroidURI.getPath());
@@ -96,9 +103,10 @@ public class Kprototype {
             int index=3;
             int cluster_id=0; 
             ClusterSummuray object; 
+            NumberFormat f = NumberFormat.getInstance();
             while ((centroid = br.readLine()) != null) 
             {
-            	cluster_id+=1; 
+            	logR.info("centerod " + centroid); 
                 String[] splits = centroid.split("\t");
                 int s_size= splits.length;
                 center_num= new ArrayList<Double>(); 
@@ -109,7 +117,14 @@ public class Kprototype {
                 {
                 	 if (k<=5)
                 	 {
-                		 center_num.add(Double.parseDouble(splits[k])); 
+                		 
+                		 try {
+							center_num.add(f.parse(splits[k]).doubleValue());
+						} catch (ParseException e) {
+							logR.info("problem in catch  ");
+							e.printStackTrace();
+						}
+                		 //center_num.add(Double.parseDouble(splits[k])); 
                 	 }
                 	 else
                 	 {
@@ -122,15 +137,17 @@ public class Kprototype {
                 object.set_center_num(center_num);
                 object.set_center_cate(center_cate);
                 object.setCluster_id(cluster_id);
-                clusters.add(object);      
+                clusters.add(object);  
+                cluster_id+=1; 
             }
-           // logR.info(" finish setup method  " );  
+            logR.info(" finish setup method  " );  
         }
 
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             // Emit (i,value) where i is the id of the closest centroidlogR.info("setup " ); 
-        //	logR.info("map method " ); 
+        logR.info("map method " ); 
+      //  logR.info("value " +value); 
             String[] splits = value.toString().split("\t");
             // split the data point into two parts, numeric and categorical 
             ArrayList<String> cate_values= new ArrayList<String>();
@@ -141,18 +158,29 @@ public class Kprototype {
             double num_distance= 0.0;
             int closestCentroid=0;
             double cate_distance=0.0; 
-            
+            NumberFormat f = NumberFormat.getInstance();
+            double vv = 0.0;
             for(int i=0; i<splits.length; i++)
             {
             	if (i<5) // numeric values
             	{
-                  //  logR.info(" i<5  " );  
+                   logR.info(" i<5  " );  
+            		//current_value= f.parse(mixed_values[i]).doubleValue();
+            		
+            		try {
+            			logR.info(" try  " ); 
+						num_values.add(f.parse(splits[i]).doubleValue());
+					} catch (ParseException e) {
+						// TODO Auto-generated catch block
+						logR.info("problem in catch 2 ");
+						e.printStackTrace();
+					}
 
-            		num_values.add(Double.parseDouble(splits[i]) );
+            	//	num_values.add(Double.parseDouble(splits[i]) );
             	}
             	else // categorical values
             	{
-            		// logR.info(" i>5  " );  
+            		 logR.info(" i>5  " );  
             		cate_values.add(splits[i]);
             	}
             }
@@ -161,7 +189,7 @@ public class Kprototype {
             { 
             	object= new ClusterSummuray (); 
             	object= clusters.get(j);
-            //	logR.info(" clusrer _id" +object.getCluster_id()); 
+               logR.info(" num_ in _object" +object.get_num_center()); 
             	num_distance= compute_EculdeanDistance(object.get_num_center(), num_values);
             	cate_distance= compute_MisMatch_distance( object.get_cate_center(),cate_values );
             	mixed_diatance= num_distance + Math.abs((1- cate_distance));// 
@@ -173,7 +201,7 @@ public class Kprototype {
             }
             
             context.write(new IntWritable(closestCentroid),value);
-           // logR.info(" finish map method " );                 
+          logR.info(" finish map method " );                 
         }
     }
 
@@ -212,6 +240,8 @@ public class Kprototype {
         public void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
            
         	logR.info("Reducer " );
+        	NumberFormat f = NumberFormat.getInstance(); // Gets a NumberFormat with the default locale, you can specify a Locale as first parameter (like Locale.FRENCH)
+        	 // myNumber now contains 20
         	Map<Integer, Dimension_freq > dim_info= new HashMap<Integer, Dimension_freq >(); 
         	ArrayList<String> cate_values= new ArrayList<String>();
             ArrayList<Double> sum_num_values= new ArrayList<Double>(5); 
@@ -252,14 +282,23 @@ public class Kprototype {
             
                 	//logR.info("sum_num" );
                 		
-                	    current_value= Double.parseDouble(mixed_values[i]);
+                	   // current_value= Double.parseDouble(mixed_values[i]);
+                	    try {
+							current_value= f.parse(mixed_values[i]).doubleValue();
+						} catch (ParseException e) {
+							// TODO Auto-generated catch block
+							logR.info("problem in catch 3 ");
+							e.printStackTrace();
+						} 
                 		temp_value= sum_num_values.get(i) + current_value;
                 		sum_num_values.add(i, temp_value);  
                 		list[i]= temp_value;
                 	
                 }
-              logR.info("sum_num"+ sum_num_values);
-              logR.info("list sum"+ list);
+             // logR.info("sum_num"+ sum_num_values);
+              logR.info("list sum"+ list.length);
+             // logR.info("list sum"+ list.toString());
+
               
                 for(int j=0; j<dim_cate; j++)
                 {
@@ -272,17 +311,19 @@ public class Kprototype {
                     
             }// end reading list of values 
         	
+        	double v=0.0; 
         	// compute the mean for each i_num dimension 
         	double avg=0.0; 
-        	for(int i=0; i<sum_num_values.size(); i++)
+        	for(int i=0; i<list.length; i++)
         	{
-        		avg=sum_num_values.get(i) / nPoints; 
-        		logR.info("avg " + avg);
+        		v= (double) list[i];
+        		avg=v / nPoints; 
+        		//logR.info("avg " + avg);
         		//centriod.add(i, avg);	
         		center.add(i, avg);
         		
         	}
-        	
+        	logR.info("center"+ center);
         	// compute the mode for each i_cate dimension	
         	ArrayList<String> clusteriod =new ArrayList<String>(); 
             String mode_dim_i= null; 
@@ -299,18 +340,21 @@ public class Kprototype {
             for(int i=0; i<center.size(); i++)
             {
             	cluster_representive+= center.get(i).toString();
+            	if(i!=4)
             	cluster_representive+=" ";	
             }
             for(int j=0; j<clusteriod.size();j++)
             {
-            	cluster_representive+= clusteriod.get(j);
             	cluster_representive+=" ";
+            	cluster_representive+= clusteriod.get(j);
+            	
             }
+            logR.info("cluster_representive length" + cluster_representive.length());
       	
             logR.info("cluster_representive " + cluster_representive);
             context.write(key, new Text(cluster_representive));
         	
-        	
+          logR.info("end reduce" );
         }
     }
 
@@ -372,7 +416,8 @@ public class Kprototype {
         // Iterations
         Configuration conf = new Configuration();
         FileChecksum oldChecksum = null;
-        for (int i = 0; i < maxIterations; i++) {
+        for (int i = 0; i < maxIterations; i++) 
+        {
             Job job = Job.getInstance(conf, "Kprototype");
             job.setJarByClass(Kprototype.class);
             job.setMapperClass(KmeansMapper.class);
@@ -396,12 +441,15 @@ public class Kprototype {
             fs = FileSystem.get(URI.create(centroidFile), new Configuration());
             path = new Path(centroidFile);
             FileChecksum newChecksum = fs.getFileChecksum(path); // will return null unless path is on hdfs
-            if (oldChecksum != null && newChecksum.equals(oldChecksum)) {
+            if (oldChecksum != null && newChecksum.equals(oldChecksum)) 
+            {
                 break; // algorithm converged
             } 
             oldChecksum = newChecksum;
+            System.out.println(" iteration number "+i);
         }
         // Do a final map step to output the classification
+        System.out.println(" End of clustring  ");
         Job job = Job.getInstance(conf, "Kprototype");
         job.setJarByClass(Kprototype.class);
         job.setMapperClass(KmeansMapper.class);
