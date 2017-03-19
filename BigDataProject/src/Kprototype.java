@@ -107,15 +107,15 @@ public class Kprototype {
             while ((centroid = br.readLine()) != null) 
             {
             	logR.info("centerod " + centroid); 
-                String[] splits = centroid.split("\t");
+                String[] splits = centroid.split("\t")[1].split(" ");
                 int s_size= splits.length;
                 center_num= new ArrayList<Double>(); 
                 center_cate= new ArrayList<String>();
                 
                logR.info("string length  "+ s_size + "split [1]"+ splits[1]); 
-                for (int k=1; k<splits.length; k++)
+                for (int k=0; k<splits.length; k++)
                 {
-                	 if (k<=5)
+                	 if (k<5)
                 	 {
                 		 
                 		 try {
@@ -150,7 +150,7 @@ public class Kprototype {
             // Emit (i,value) where i is the id of the closest centroidlogR.info("setup " ); 
         logR.info("map method " ); 
       //  logR.info("value " +value); 
-            String[] splits = value.toString().split("\t");
+            String[] splits = value.toString().split(" ");
             // split the data point into two parts, numeric and categorical 
             ArrayList<String> cate_values= new ArrayList<String>();
             ArrayList<Double> num_values= new ArrayList<Double>(); 
@@ -166,7 +166,7 @@ public class Kprototype {
             {
             	if (i<5) // numeric values
             	{
-                  // logR.info(" i<5  " );  
+                   logR.info(" i<5  " );  
             		//current_value= f.parse(mixed_values[i]).doubleValue();
             		
             		try {
@@ -176,7 +176,7 @@ public class Kprototype {
 						//logR.info(" num_value size " + num_values.size()); 
 					} catch (ParseException e) {
 						// TODO Auto-generated catch block
-						//logR.info("problem in catch 2 ");
+						logR.info("problem in catch 2 ");
 						e.printStackTrace();
 					}
 
@@ -278,7 +278,7 @@ public class Kprototype {
         	while (values.iterator().hasNext()) 
         	{
                 nPoints++;
-                String[] mixed_values = values.iterator().next().toString().split("\t");
+                String[] mixed_values = values.iterator().next().toString().split(" ");
                logR.info("mixed_values"+mixed_values.length );
                 // sum numeric values in dimension i 
                 for(int i=0; i<dim_num; i++)
@@ -340,7 +340,7 @@ public class Kprototype {
             
             }
             logR.info("centroid_size " +center.size());
-    		String cluster_representive="";
+    		String cluster_representive = "";
             for(int i=0; i<center.size(); i++)
             {
             	cluster_representive+= center.get(i).toString();
@@ -453,7 +453,7 @@ public class Kprototype {
             oldChecksum = newChecksum;
             System.out.println(" Ende of iteration number "+ (i));
         }
-        /* Do a final map step to output the classification
+       // Do a final map step to output the classification
         System.out.println(" End of clustring  ");
         Job job = Job.getInstance(conf, "Kprototype");
         job.setJarByClass(Kprototype.class);
@@ -470,6 +470,6 @@ public class Kprototype {
         } 
         else {
             System.exit(0);
-        }*/
+        }
     }
 }
