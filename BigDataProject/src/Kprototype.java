@@ -1,5 +1,5 @@
 
-import java.awt.geom.Point2D;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -20,6 +20,7 @@ import java.util.Map;
 
 import javax.xml.bind.DatatypeConverter;
 
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -89,6 +90,30 @@ public class Kprototype {
     		
     		return total_misMatch; 
     	}
+        public int get_num_dim(String line, int data_type)
+        {
+        	int  number_counter=0;
+        	int string_counter=0; 
+        	boolean isnumber;
+        	
+        	
+        	String[] splits = line.split("\t")[1].split(" ");
+        	for(int i=0 ; i<splits.length; i++)
+        	{
+        		isnumber=   NumberUtils.isNumber(splits[i]);
+       		 if(isnumber)
+       			 number_counter++;
+       		 else
+       			 string_counter++;
+        	}
+        	if (data_type==1)
+        		return number_counter; 
+        	else
+        		return string_counter; 
+        		
+        	
+        	 
+        }
 
         @Override
         public void setup(Context context) throws IOException, InterruptedException {
@@ -97,6 +122,16 @@ public class Kprototype {
             URI centroidURI = Job.getInstance(context.getConfiguration()).getCacheFiles()[0];
             Path centroidsPath = new Path(centroidURI.getPath());
             BufferedReader br = new BufferedReader(new FileReader(centroidsPath.getName().toString()));
+            BufferedReader br1 = new BufferedReader(new FileReader(centroidsPath.getName().toString()));
+            String mix_line= br1.readLine();
+            int string_counter=0; 
+            int number_counter=0; 
+            number_counter= get_num_dim(mix_line,1);
+            string_counter= get_num_dim(mix_line,2);
+            logR.info(" number of categoriacl "+string_counter +" number of int" + number_counter);  
+
+            
+
             ArrayList<Double> center_num;// a list for numeric features
             ArrayList<String>center_cate;// a list for categorical features
             String centroid = null;
@@ -104,6 +139,9 @@ public class Kprototype {
             int cluster_id=0; 
             ClusterSummuray object; 
             NumberFormat f = NumberFormat.getInstance();
+            
+            
+        	
             while ((centroid = br.readLine()) != null) 
             {
             	logR.info("centerod " + centroid); 
@@ -118,6 +156,7 @@ public class Kprototype {
                 	 if (k<5)
                 	 {
                 		 
+                		 
                 		 try {
  							logR.info("try to add ");
 
@@ -130,6 +169,7 @@ public class Kprototype {
                 	 }
                 	 else
                 	 {
+                		 
                 		 center_cate.add(splits[k]); 
                 	 }		 
                 }              
@@ -143,6 +183,7 @@ public class Kprototype {
                 cluster_id+=1; 
             }
             logR.info(" finish setup method  " );  
+            //logR.info(" number of categoriacl "+string_counter +" number of int" + number_counter);  
         }
 
         @Override
@@ -244,6 +285,7 @@ public class Kprototype {
         public void reduce(IntWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
            
         	logR.info("Reducer " );
+        	
         	NumberFormat f = NumberFormat.getInstance(); // Gets a NumberFormat with the default locale, you can specify a Locale as first parameter (like Locale.FRENCH)
         	 // myNumber now contains 20
         	Map<Integer, Dimension_freq > dim_info= new HashMap<Integer, Dimension_freq >(); 
