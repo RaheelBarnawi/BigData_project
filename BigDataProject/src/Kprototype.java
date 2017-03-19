@@ -112,16 +112,18 @@ public class Kprototype {
                 center_num= new ArrayList<Double>(); 
                 center_cate= new ArrayList<String>();
                 
-              //  logR.info("string length  "+ s_size ); 
+               logR.info("string length  "+ s_size + "split [1]"+ splits[1]); 
                 for (int k=1; k<splits.length; k++)
                 {
                 	 if (k<=5)
                 	 {
                 		 
                 		 try {
+ 							logR.info("try to add ");
+
 							center_num.add(f.parse(splits[k]).doubleValue());
 						} catch (ParseException e) {
-							logR.info("problem in catch  ");
+							logR.info("problem in catch ");
 							e.printStackTrace();
 						}
                 		 //center_num.add(Double.parseDouble(splits[k])); 
@@ -131,7 +133,7 @@ public class Kprototype {
                 		 center_cate.add(splits[k]); 
                 	 }		 
                 }              
-             
+                logR.info("center size before adding");
                 // set up  cluster representations 
                 object= new ClusterSummuray();
                 object.set_center_num(center_num);
@@ -164,15 +166,17 @@ public class Kprototype {
             {
             	if (i<5) // numeric values
             	{
-                   logR.info(" i<5  " );  
+                  // logR.info(" i<5  " );  
             		//current_value= f.parse(mixed_values[i]).doubleValue();
             		
             		try {
-            			logR.info(" try  " ); 
+            			//logR.info(" try  " ); 
+            			
 						num_values.add(f.parse(splits[i]).doubleValue());
+						//logR.info(" num_value size " + num_values.size()); 
 					} catch (ParseException e) {
 						// TODO Auto-generated catch block
-						logR.info("problem in catch 2 ");
+						//logR.info("problem in catch 2 ");
 						e.printStackTrace();
 					}
 
@@ -189,7 +193,7 @@ public class Kprototype {
             { 
             	object= new ClusterSummuray (); 
             	object= clusters.get(j);
-               logR.info(" num_ in _object" +object.get_num_center()); 
+               logR.info(" num_ in _object" + object.get_num_center()); 
             	num_distance= compute_EculdeanDistance(object.get_num_center(), num_values);
             	cate_distance= compute_MisMatch_distance( object.get_cate_center(),cate_values );
             	mixed_diatance= num_distance + Math.abs((1- cate_distance));// 
@@ -291,7 +295,7 @@ public class Kprototype {
 							e.printStackTrace();
 						} 
                 		temp_value= sum_num_values.get(i) + current_value;
-                		sum_num_values.add(i, temp_value);  
+                		//sum_num_values.add(i, temp_value);  
                 		list[i]= temp_value;
                 	
                 }
@@ -418,6 +422,7 @@ public class Kprototype {
         FileChecksum oldChecksum = null;
         for (int i = 0; i < maxIterations; i++) 
         {
+        	 System.out.println(" start of iteration number "+ (i));
             Job job = Job.getInstance(conf, "Kprototype");
             job.setJarByClass(Kprototype.class);
             job.setMapperClass(KmeansMapper.class);
@@ -446,9 +451,9 @@ public class Kprototype {
                 break; // algorithm converged
             } 
             oldChecksum = newChecksum;
-            System.out.println(" iteration number "+i);
+            System.out.println(" Ende of iteration number "+ (i));
         }
-        // Do a final map step to output the classification
+        /* Do a final map step to output the classification
         System.out.println(" End of clustring  ");
         Job job = Job.getInstance(conf, "Kprototype");
         job.setJarByClass(Kprototype.class);
@@ -462,8 +467,9 @@ public class Kprototype {
         if (!job.waitForCompletion(true)) // job failed
         {
             System.exit(1);
-        } else {
+        } 
+        else {
             System.exit(0);
-        }
+        }*/
     }
 }
