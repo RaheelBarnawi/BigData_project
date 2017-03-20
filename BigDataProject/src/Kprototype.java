@@ -1,5 +1,3 @@
-
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -38,6 +36,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class Kprototype {
 
+	// private static int string_counter=0; 
+
     /**
      * **************
      */
@@ -47,10 +47,10 @@ public class Kprototype {
     /**
      * **************
      */
+	/*
     public static class KmeansMapper extends Mapper<Object, Text, IntWritable, Text> {
 
     	public final Log logR = LogFactory.getLog(KmeansMapper.class);
-        
         private ArrayList<ClusterSummuray> clusters= new ArrayList<ClusterSummuray>();  //  a list to hold the clusters'information 
         
         // this method is used to compute the distance between numeric features and centriod
@@ -77,7 +77,7 @@ public class Kprototype {
         /* find the similarity between clusteriod and categorical values
           two values x and y have similarity value equal to one if x=y otherwise it's zero
           then distance= 1- similarity 
-        */
+        
         public int  compute_MisMatch_distance(ArrayList<String> cateData, ArrayList<String> clusteroid )
     	{
         	logR.info("Mismatch ");
@@ -153,7 +153,7 @@ public class Kprototype {
                logR.info("string length  "+ s_size + "split [1]"+ splits[1]); 
                 for (int k=0; k<splits.length; k++)
                 {
-                	 if (k<5)
+                	 if (k<number_counter)
                 	 {
                 		 
                 		 
@@ -248,7 +248,7 @@ public class Kprototype {
             context.write(new IntWritable(closestCentroid),value);
           logR.info(" finish map method " );                 
         }
-    }
+    }*/
 
     /**
      * ***********
@@ -259,6 +259,7 @@ public class Kprototype {
     /**
      * ***********
      */
+    /*
     public static class KmeansReducer extends Reducer<IntWritable, Text, IntWritable, Text> 
     {
     	public final static Log logR = LogFactory.getLog(KmeansMapper.class);
@@ -402,7 +403,7 @@ public class Kprototype {
         	
           logR.info("end reduce" );
         }
-    }
+    }*/
 
     /**
      * *********
@@ -467,8 +468,10 @@ public class Kprototype {
         	 System.out.println(" start of iteration number "+ (i));
             Job job = Job.getInstance(conf, "Kprototype");
             job.setJarByClass(Kprototype.class);
-            job.setMapperClass(KmeansMapper.class);
-            job.setReducerClass(KmeansReducer.class);
+           // job.setMapperClass(KmeansMapper.class);
+            job.setMapperClass(Kprototype_Mapper.class);
+            job.setReducerClass(Kprototype_Reducer.class);
+            //job.setReducerClass(KmeansReducer.class);
             job.setOutputKeyClass(IntWritable.class);
             job.setOutputValueClass(Text.class);
             FileInputFormat.addInputPath(job, new Path(inputPath));
@@ -499,7 +502,8 @@ public class Kprototype {
         System.out.println(" End of clustring  ");
         Job job = Job.getInstance(conf, "Kprototype");
         job.setJarByClass(Kprototype.class);
-        job.setMapperClass(KmeansMapper.class);
+       // job.setMapperClass(KmeansMapper.class);
+        job.setMapperClass( Kprototype_Mapper.class);
         job.setOutputKeyClass(IntWritable.class);
         job.setOutputValueClass(Text.class);
         FileInputFormat.addInputPath(job, new Path(inputPath));
