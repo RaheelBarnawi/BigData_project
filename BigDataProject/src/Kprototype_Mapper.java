@@ -5,10 +5,7 @@ import java.net.URI;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
-
 import org.apache.commons.lang.math.NumberUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -16,18 +13,18 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 //import org.apache.hadoop.mapreduce.Mapper.Context;
 
-public class Kprototype_Mapper extends Mapper {
+public class Kprototype_Mapper extends Mapper <Object, Text, IntWritable, Text>{
 	
-	public final Log logR = LogFactory.getLog(Kprototype_Mapper.class);
-	private ArrayList<ClusterSummuray> clusters = new ArrayList<ClusterSummuray>(); 
-	private static int number_counter = 0;
-	//private static int string_counter=0;
-																					
-
+	//public final Log logR = LogFactory.getLog(Kprototype_Mapper.class);
+	private ArrayList<ClusterSummuray> cluster_info = new ArrayList<ClusterSummuray>(); 	
+	
 	@Override
 	public void setup(Context context) throws IOException, InterruptedException {
-		logR.info("setup method  ");
-		// Read the file containing centroids
+
+		/*
+		 * Reads clusters_representative file ( centriod + clusteriod)
+		 * finds the number of numeric and categorical features
+		*/
 		URI centroidURI = Job.getInstance(context.getConfiguration()).getCacheFiles()[0];
 		Path centroidsPath = new Path(centroidURI.getPath());
 		BufferedReader br = new BufferedReader(new FileReader(centroidsPath.getName().toString()));
@@ -36,21 +33,24 @@ public class Kprototype_Mapper extends Mapper {
 		ArrayList<String> center_cate;// a list for categorical features
 		String centroid = null;
 		int cluster_id = 0;
+		int numeric_counter = 0;// number of numeric  features
+		int categorical_counter=0;// number of categorical features
 		ClusterSummuray object;
 		NumberFormat f = NumberFormat.getInstance();
 		String mix_line = br1.readLine();
-		number_counter = get_num_dim(mix_line, 1);
-		//string_counter = get_num_dim(mix_line, 2);
+		numeric_counter = get_num_dim(mix_line, 1);
+		categorical_counter = get_num_dim(mix_line, 2);
+		ClusterSummuray.cate_feature= categorical_counter; 
+		ClusterSummuray.num_feature=numeric_counter; 
 		
-		while ((centroid = br.readLine()) != null) // read centroids
+		while ((centroid = br.readLine()) != null) 
 		{
-			logR.info("centerod " + centroid);
+			
 			String[] splits = centroid.split("\t")[1].split(" ");
-			// each cluster has a centeriod and a clusteriod 
 			center_num = new ArrayList<Double>();
 			center_cate = new ArrayList<String>();
 			for (int k = 0; k < splits.length; k++) {
-				if (k < number_counter) {
+				if (k < numeric_counter) {
 					try 
 					{center_num.add(f.parse(splits[k]).doubleValue()); } 
 					catch (ParseException e) 
@@ -66,13 +66,20 @@ public class Kprototype_Mapper extends Mapper {
 			object.set_center_num(center_num);
 			object.set_center_cate(center_cate);
 			object.setCluster_id(cluster_id);
-			clusters.add(object);
+			cluster_info.add(object);
 			cluster_id += 1;
 		}
 	}
 
-	/* this method is used to compute the distance between numeric attribute values of
-	  an object and a certriod*/
+	/* 
+	 * 
+	 * this method is used to compute the distance between numeric attribute values of
+	  an object and a certriod
+	  @param  center centriod of a class k 
+	  @param  datapoint the numeric feature of a data point 
+	  @ return distance between the two points
+	  
+	  */
 	
 	public double compute_EculdeanDistance(ArrayList<Double> center, ArrayList<Double> datapoint) {
 		double differnece = 0.0;
@@ -89,15 +96,20 @@ public class Kprototype_Mapper extends Mapper {
 	}
 
 	/*
-	 * find the similarity between clusteriod and categorical values. Two values
+	 *  this method finds the similarity between clusteriod and categorical values. Two values
 	 * x and y have similarity value equal to one if x=y otherwise it's zero
 	 * then distance= 1- similarity
+	 * 
+	 * @param  cateData centriod of a class k 
+	 * @param  cate_datapoint the numeric feature of a data point 
+	 *  @ return distance between the two points
+	 * 
 	 */
-	public int compute_MisMatch_distance(ArrayList<String> cateData, ArrayList<String> clusteroid) {
-		logR.info("Mismatch ");
+	public int compute_MisMatch_distance(ArrayList<String> cate_datapoint, ArrayList<String> clusteroid) {
+		//logR.info("Mismatch ");
 		int total_misMatch = 0;
-		for (int i = 0; i < cateData.size(); i++) {
-			if (cateData.get(i) == clusteroid.get(i))
+		for (int i = 0; i < cate_datapoint.size(); i++) {
+			if (cate_datapoint.get(i) == clusteroid.get(i))
 				total_misMatch += 1;
 		}
 
@@ -123,12 +135,14 @@ public class Kprototype_Mapper extends Mapper {
 
 	}
 
-	// @Override 
+	 @Override 
 	//Emit a cluster id as a key and the data point as a value
 	public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-		String[] splits = value.toString().split(" ");
+		
+		 String[] splits = value.toString().split(" ");
 		ArrayList<String> cate_values = new ArrayList<String>();
 		ArrayList<Double> num_values = new ArrayList<Double>();
+		int numeric_counter= ClusterSummuray.num_feature; 
 		ClusterSummuray object;
 		double mixed_diatance = 0.0;
 		double minDistance = 1000000000;
@@ -137,7 +151,7 @@ public class Kprototype_Mapper extends Mapper {
 		double cate_similarity  = 0.0;
 		NumberFormat f = NumberFormat.getInstance();
 		for (int i = 0; i < splits.length; i++) {
-			if (i < number_counter) // numeric values
+			if (i < numeric_counter) // numeric values
 			{
 				try {
 					num_values.add(f.parse(splits[i]).doubleValue());
@@ -151,15 +165,15 @@ public class Kprototype_Mapper extends Mapper {
 			}
 		}
 
-		for (int j = 0; j < clusters.size(); j++) 
+		for (int j = 0; j < cluster_info.size(); j++) 
 		{
 			object = new ClusterSummuray();
-			object = clusters.get(j);
-			logR.info(" num_ in _object" + object.get_num_center());
+			object = cluster_info.get(j);
 			num_distance = compute_EculdeanDistance(object.get_num_center(), num_values);
 			cate_similarity = compute_MisMatch_distance(object.get_cate_center(), cate_values);
-			mixed_diatance = num_distance + Math.abs((1 - cate_similarity));
-			if (mixed_diatance < minDistance) {
+			mixed_diatance = num_distance + 0.2* ( Math.abs((1 - cate_similarity)));
+			if (mixed_diatance < minDistance) 
+			{
 				minDistance = mixed_diatance;
 				closestCentroid = object.getCluster_id();
 			}
