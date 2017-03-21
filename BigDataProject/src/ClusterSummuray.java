@@ -13,17 +13,22 @@ public class ClusterSummuray {
 	private ArrayList<Double>iteration_ids= new ArrayList<Double>();
 	private ArrayList<Double> center_num= new ArrayList<Double>(); 
     private ArrayList<String>center_cate= new ArrayList<String>();
+	public static int num_feature=0 ;
+	public static int cate_feature=0 ;
+	
+	
+	
 	
 	
 	public void set_center_num(ArrayList<Double> center)
-	{center_num=center; }
+	{this.center_num=center; }
 	
 	public void set_center_cate(ArrayList<String> clusteriod)
-	{center_cate=clusteriod; }
+	{this.center_cate=clusteriod; }
 	public ArrayList<Double> get_num_center()
-	{return center_num;}
+	{return this.center_num;}
 	public ArrayList<String> get_cate_center()
-	{return center_cate;}
+	{return this.center_cate;}
 	
 	public int getCluster_id() 
 	{
