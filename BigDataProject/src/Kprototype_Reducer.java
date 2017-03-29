@@ -16,7 +16,10 @@ public class Kprototype_Reducer extends Reducer<IntWritable, Text, IntWritable, 
 
 	 	public final static Log logR = LogFactory.getLog(Kprototype_Reducer.class);
 
-	//this method is used to find the most frequent value (mode) for  each  categorical dimension 
+	/*this method is used to find the most frequent value (mode) for  each  categorical dimension 
+	 @param  dim is a hash map with a categorical value as a key and its frequency as  the value
+	 @return the value with high frequency
+	 */
 	public static String find_most_frequent(Map<String, Integer> dim)
 	{
 		int freq=0; 

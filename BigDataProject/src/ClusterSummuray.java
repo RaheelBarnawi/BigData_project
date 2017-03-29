@@ -4,7 +4,7 @@ import java.util.Map;
 
 public class ClusterSummuray {
 	
-	private  int cluster_id;
+	private  int cluster_id=0;
 	private  Map<Integer, ArrayList<Double>> NumFeatue_value = new HashMap<Integer, ArrayList<Double>>(); // numerical dimensions 
 	private  Map<Integer, ArrayList<String>> CatFeatue_value = new HashMap<Integer, ArrayList<String>>(); // Categorical dimensions
 	private ArrayList<Integer> dataObject_ids= new ArrayList<Integer>();
@@ -15,9 +15,6 @@ public class ClusterSummuray {
     private ArrayList<String>center_cate= new ArrayList<String>();
 	public static int num_feature=0 ;
 	public static int cate_feature=0 ;
-	
-	
-	
 	
 	
 	public void set_center_num(ArrayList<Double> center)
@@ -32,7 +29,7 @@ public class ClusterSummuray {
 	
 	public int getCluster_id() 
 	{
-		return cluster_id;
+		return this.cluster_id;
 	}
 	public void setCluster_id(int cluster_id) {
 		this.cluster_id = cluster_id;
