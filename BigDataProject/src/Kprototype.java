@@ -109,10 +109,10 @@ public class Kprototype {
                 break; // algorithm converged
             } 
             oldChecksum = newChecksum;
-            System.out.println(" Ende of iteration number "+ (i));
+            
         }
        // Do a final map step to output the classification
-        System.out.println(" End of clustring  ");
+       
         Job job = Job.getInstance(conf, "Kprototype");
         job.setJarByClass(Kprototype.class);
        // job.setMapperClass(KmeansMapper.class);

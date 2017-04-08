@@ -65,7 +65,7 @@ public class Kprototype_Reducer extends Reducer<IntWritable, Text, IntWritable, 
 		// ------- variables for handling categorical values-----------------
 		Map<Integer, Dimension_freq > dim_info= new HashMap<Integer, Dimension_freq >(); 
 		int categorical_counter= ClusterSummuray.cate_feature; 
-		Dimension_freq  object; 
+		Dimension_freq  object_dim; 
 		Dimension_freq  temp_object; 
 		int temp_index=0; 
 		ArrayList<String> clusteriod =new ArrayList<String>(); 
@@ -80,8 +80,9 @@ public class Kprototype_Reducer extends Reducer<IntWritable, Text, IntWritable, 
 		//for each dimension; create an object to hold the frequency of values in that dimension 
 		for (int i=0; i<categorical_counter; i++)
 		{
-			object= new Dimension_freq (i);
-			dim_info.put(i, object);
+			object_dim= new Dimension_freq (i);
+			
+			dim_info.put(i, object_dim);
 		}
 		
 		while (values.iterator().hasNext()) 
@@ -146,7 +147,7 @@ public class Kprototype_Reducer extends Reducer<IntWritable, Text, IntWritable, 
 			cluster_representives+= clusteriod.get(j);
 
 		}
-
+		logR.info("key"+ key );
 		context.write(key, new Text(cluster_representives));
 
 	}

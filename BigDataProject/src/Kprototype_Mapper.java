@@ -30,6 +30,7 @@ public class Kprototype_Mapper extends Mapper <Object, Text, IntWritable, Text>{
 		URI centroidURI = Job.getInstance(context.getConfiguration()).getCacheFiles()[0];
 		Path centroidsPath = new Path(centroidURI.getPath());
 		BufferedReader br = new BufferedReader(new FileReader(centroidsPath.getName().toString()));
+		// 
 		BufferedReader br1 = new BufferedReader(new FileReader(centroidsPath.getName().toString()));
 		ArrayList<Double> center_num;// a list for numeric features
 		ArrayList<String> center_cate;// a list for categorical features
@@ -42,13 +43,14 @@ public class Kprototype_Mapper extends Mapper <Object, Text, IntWritable, Text>{
 		String mix_line = br1.readLine();
 		numeric_counter = get_num_dim(mix_line, 1);
 		categorical_counter = get_num_dim(mix_line, 2);
-		ClusterSummuray.cate_feature= categorical_counter; 
+		ClusterSummuray.cate_feature= categorical_counter; // save the number of categorical attribute 
 		ClusterSummuray.num_feature=numeric_counter; 
 		
 		while ((centroid = br.readLine()) != null) 
 		{
 			
 			String[] splits = centroid.split("\t")[1].split(" ");
+			logR.info("centriod setup"+ centroid.split("\t")[1]);
 			center_num = new ArrayList<Double>();
 			center_cate = new ArrayList<String>();
 			for (int k = 0; k < splits.length; k++) 
@@ -64,7 +66,7 @@ public class Kprototype_Mapper extends Mapper <Object, Text, IntWritable, Text>{
 					center_cate.add(splits[k]);
 					}
 			}
-			// set up cluster representations
+			// set up cluster representatives 
 			object = new ClusterSummuray();
 			object.set_center_num(center_num);
 			object.set_center_cate(center_cate);
@@ -115,7 +117,7 @@ public class Kprototype_Mapper extends Mapper <Object, Text, IntWritable, Text>{
 		//logR.info("Mismatch ");
 		int total_misMatch = 0;
 		for (int i = 0; i < cate_datapoint.size(); i++) {
-			if (cate_datapoint.get(i) == clusteroid.get(i))
+			if (cate_datapoint.get(i) != clusteroid.get(i))
 				total_misMatch += 1;
 		}
 
@@ -189,24 +191,22 @@ public class Kprototype_Mapper extends Mapper <Object, Text, IntWritable, Text>{
 			/*logR.info("object id"+object.getCluster_id());
 			//logR.info("center Numeric values"+object.get_num_center());
 		//	logR.info(" center cate values"+object.get_cate_center());
-			logR.info("*******************************************");
+			logR.info("*******************************************");*/
 			logR.info(" Numeric values"+num_values);
-			logR.info("  cate values"+cate_values);*/
-			
+			logR.info("  cate values"+cate_values);
+			logR.info("center Numeric values"+object.get_num_center());
+			logR.info(" center cate values"+object.get_cate_center());
 			num_distance = compute_EculdeanDistance(object.get_num_center(), num_values);
 			cate_similarity = compute_MisMatch_distance(object.get_cate_center(), cate_values);
-			mixed_diatance = num_distance ;
+			//mixed_diatance = num_distance ;
 			/*logR.info(" out_ miniDistance="+minDistance);
 			logR.info(" out_mixDistance="+mixed_diatance);
 			logR.info("*******************************************");*/
-			//mixed_diatance = num_distance + 0.2* ( Math.abs((1 - cate_similarity)));
+			mixed_diatance = num_distance + (1.2* cate_similarity);
 			if (mixed_diatance < minDistance) 
 			{
-				/*logR.info("Enter if mixed_diatance < minDistance");
-				logR.info("miniDistance="+minDistance);
-				logR.info("mixDistance="+mixed_diatance);*/
+				
 				minDistance = mixed_diatance;
-				//closestCentroid = object.getCluster_id();
 				closestCentroid=j;
 				logR.info("closestCentroid="+closestCentroid);
 			}
