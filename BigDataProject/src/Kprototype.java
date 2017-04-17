@@ -12,6 +12,9 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+
 import javax.xml.bind.DatatypeConverter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileChecksum;
@@ -76,6 +79,7 @@ public class Kprototype {
         // Iterations
         Configuration conf = new Configuration();
         FileChecksum oldChecksum = null;
+        
         for (int i = 0; i < maxIterations; i++) 
         {
         	 System.out.println(" start of iteration number "+ (i));
@@ -130,5 +134,10 @@ public class Kprototype {
         else {
             System.exit(0);
         }
+       
+
+     // Get start time (this needs to be a global variable).
+    
+     
     }
 }

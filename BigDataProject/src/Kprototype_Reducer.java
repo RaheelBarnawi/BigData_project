@@ -147,7 +147,7 @@ public class Kprototype_Reducer extends Reducer<IntWritable, Text, IntWritable, 
 			cluster_representives+= clusteriod.get(j);
 
 		}
-		logR.info("key"+ key );
+		//logR.info("key"+ key );
 		context.write(key, new Text(cluster_representives));
 
 	}
