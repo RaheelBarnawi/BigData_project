@@ -188,37 +188,22 @@ public class Kprototype_Mapper extends Mapper <Object, Text, IntWritable, Text>{
 			//logR.info("*************start distance*****************");
 			object = new ClusterSummuray();
 			object = cluster_info.get(j);
-			/*logR.info("object id"+object.getCluster_id());
-			//logR.info("center Numeric values"+object.get_num_center());
-		//	logR.info(" center cate values"+object.get_cate_center());
-			logR.info("*******************************************");*/
-			//logR.info(" Numeric values"+num_values);
-			//logR.info("  cate values"+cate_values);
-			//logR.info("center Numeric values"+object.get_num_center());
-			//logR.info(" center cate values"+object.get_cate_center());
+			
 			num_distance = compute_EculdeanDistance(object.get_num_center(), num_values);
 			cate_similarity = compute_MisMatch_distance(object.get_cate_center(), cate_values);
-			//mixed_diatance = num_distance ;
-			/*logR.info(" out_ miniDistance="+minDistance);
-			logR.info(" out_mixDistance="+mixed_diatance);
-			logR.info("*******************************************");*/
-			mixed_diatance = num_distance + (1.2* cate_similarity);
+			
+			mixed_diatance = num_distance + (1.5* cate_similarity);
 			if (mixed_diatance < minDistance) 
 			{
 				
 				minDistance = mixed_diatance;
 				closestCentroid=j;
-				//logR.info("closestCentroid="+closestCentroid);
-			}
-			//logR.info("miniDistance="+minDistance);
-			
+				
+			}	
 		}
-		/*logR.info("Conclustio ");
-		logR.info("closestCentroid "+closestCentroid);
-		logR.info(" Numeric values"+num_values);
-		logR.info("  cate values"+cate_values);*/
+		
 		c.set(closestCentroid);
-		//context.write(new IntWritable(closestCentroid), value);
+	
 		context.write(c, value);
 	}
 }
